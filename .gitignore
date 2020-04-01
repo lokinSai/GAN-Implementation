@@ -1,0 +1,8 @@
+# ignore all images
+/images
+/img_align_celeba
+# ignore all zip
+*.zip
+*.7z
+# ignore all h5 file
+*.h5
