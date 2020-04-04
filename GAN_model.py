@@ -47,7 +47,7 @@ def make_discriminator_model():
     model.add(layers.Dropout(0.3))
 
     model.add(layers.Flatten())
-    model.add(layers.Dense(1))
+    model.add(layers.Dense(1,activation="sigmoid"))
 
     return model
 
@@ -114,7 +114,7 @@ def train(dataset, epochs, batch_size, noise_dim, checkpoint_dir='./training_che
 if __name__ == '__main__':
     buffer_size = 6000
     batch_size = 1
-    epochs = 50
+    epochs = 400
     noise_dim = 100
     # images = get_images()
     # train_dataset = image_to_dataset(images, batch_size, buffer_size)
