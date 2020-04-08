@@ -57,11 +57,12 @@ def discriminator_loss(cross_entropy, real_output, fake_output):
     fake_loss = tf.reduce_mean(fake_output)
     # real_loss = cross_entropy(tf.ones_like(real_output), real_output)
     # fake_loss = cross_entropy(tf.zeros_like(fake_output), fake_output)
-    total_loss = real_loss + fake_loss
+    total_loss = - real_loss + fake_loss
     return total_loss
 
 def generator_loss(cross_entropy, fake_output):
-    return tf.reduce_mean(fake_output)
+    fake_loss_gan = - tf.reduce_mean(fake_output)
+    return fake_loss_gan
 
 @tf.function
 def train_step(images, generator, discriminator, \
@@ -99,8 +100,8 @@ def train(dataset, epochs, batch_size, noise_dim, checkpoint_dir='./training_che
         for image_batch in dataset:
             train_step(image_batch, generator, discriminator, 
                        generator_optimizer, discriminator_optimizer, cross_entropy, batch_size)
-        if (epoch + 1) % 5 == 0:
-            # checkpoint.save(file_prefix = checkpoint_prefix)
+        if (epoch + 1) % 1000 == 0:
+            checkpoint.save(file_prefix = checkpoint_prefix)
             image_helper.generate_and_save_images(generator, epoch+1)
 
         print ('Time for epoch {} is {} sec'.format(epoch + 1, time.time()-start))
@@ -115,8 +116,8 @@ def train(dataset, epochs, batch_size, noise_dim, checkpoint_dir='./training_che
 
 if __name__ == '__main__':
     buffer_size = 6000
-    batch_size = 1
-    epochs = 400
+    batch_size = 1000
+    epochs = 8000
     noise_dim = 100
     # images = get_images()
     # train_dataset = image_to_dataset(images, batch_size, buffer_size)
