@@ -148,7 +148,10 @@ def train(dataset, epochs, batch_size, noise_dim, checkpoint_dir='./training_che
             image_helper.generate_and_save_images(generator, epoch + 1)
 
         print('Time for epoch {} is {} sec'.format(epoch + 1, time.time() - start))
-
+        print("Epoch " + str(epoch + 1) + "- Discriminator Loss:", np.mean(avg_desc_loss), "Generator Loss:",
+              np.mean(avg_gen_loss))
+        print("\n")
+        
     # Generate after the final epoch
     image_helper.generate_and_save_images(generator, epochs)
 
