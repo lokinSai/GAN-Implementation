@@ -24,16 +24,17 @@ def get_images(img_dir='mini_data'):
     return data
 
 class generator:
-    def __init__(self, filename):
+    def __init__(self, filename, key):
         self.filename = filename
+        self.key = key
 
     def __call__(self):
         with h5py.File(self.filename, 'r') as f:
-            for im in f['celeba']:
+            for im in f[self.key]:
                 yield im
 
-def get_h5_images(filename='celeba_dataset.h5'):
-    gen = generator(filename)
+def get_h5_images(filename='celeba_dataset.h5', key='celeba'):
+    gen = generator(filename, key)
     dataset = tf.data.Dataset.from_generator(gen, tf.float32)
     return dataset
 

@@ -23,5 +23,5 @@ class Image_helper():
             plt.imshow((predictions[i, :, :, :] + 1) / 2.0)
             plt.axis('off')
 
-            plt.savefig('{}/image_at_epoch_{:04d}.png'.format(self.img_dir, epoch))
+        plt.savefig('{}/image_at_epoch_{:04d}.png'.format(self.img_dir, epoch))
         # plt.show()
