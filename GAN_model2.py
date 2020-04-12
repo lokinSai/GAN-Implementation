@@ -72,11 +72,6 @@ def make_discriminator_model():
     model.add(layers.LeakyReLU())
 
     model.add(layers.Dropout(0.3))
-    model.add(layers.Conv2D(1024, (5, 5), strides=(2, 2), padding='same'))
-    assert model.output_shape == (None, 2, 2, 1024)
-    model.add(layers.LeakyReLU())
-
-    model.add(layers.Dropout(0.3))
     model.add(layers.Flatten())
     model.add(layers.Dense(1))
 
@@ -106,6 +101,7 @@ def train_step(images, generator, discriminator, \
 
     with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
         generated_images = generator(noise, training=True)
+
         real_output = discriminator(images, training=True)
         fake_output = discriminator(generated_images, training=True)
         gen_loss = generator_loss(cross_entropy, fake_output)
@@ -171,8 +167,8 @@ def train(dataset, epochs, batch_size, noise_dim, checkpoint_dir='./training_che
 
 if __name__ == '__main__':
     buffer_size = 6000
-    batch_size = 1
-    epochs = 1
+    batch_size = 10
+    epochs = 5
     noise_dim = 100
     # images = get_images()
     # train_dataset = image_to_dataset(images, batch_size, buffer_size)
