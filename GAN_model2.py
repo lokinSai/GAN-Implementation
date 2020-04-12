@@ -73,7 +73,7 @@ def make_discriminator_model():
 
     model.add(layers.Dropout(0.3))
     model.add(layers.Conv2D(1024, (5, 5), strides=(2, 2), padding='same'))
-    assert model.output_shape == (None, 2, 2, 512)
+    assert model.output_shape == (None, 2, 2, 1024)
     model.add(layers.LeakyReLU())
 
     model.add(layers.Dropout(0.3))
