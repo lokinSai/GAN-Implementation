@@ -6,3 +6,10 @@
 *.7z
 # ignore all h5 file
 *.h5
+# ignore build files
+*__pycache__*
+*.pyc
+# virtual environment
+*venv*
+# IDE meta-files
+.vscode*
