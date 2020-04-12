@@ -1,10 +1,12 @@
-from PIL import Image
-from glob import glob
 import os
-import numpy as np
-from tqdm import tqdm
+
 import h5py
+import numpy as np
 import tensorflow as tf
+from glob import glob
+from PIL import Image
+from tqdm import tqdm
+
 
 def process_image(fname, w=64, h=64):
     img = Image.open(fname)
@@ -12,6 +14,7 @@ def process_image(fname, w=64, h=64):
     # normalize between -1 ~ 1
     img_arr = (img_arr - 127.5) / 127.5
     return img_arr
+
 
 # assuming you create a subset of images in /mini-data repository
 def get_images(img_dir='mini_data'):
@@ -23,7 +26,8 @@ def get_images(img_dir='mini_data'):
         data[i] = img_arr
     return data
 
-class generator:
+
+class Generator:
     def __init__(self, filename, key):
         self.filename = filename
         self.key = key
@@ -33,10 +37,13 @@ class generator:
             for im in f[self.key]:
                 yield im
 
-def get_h5_images(filename='celeba_dataset.h5', key='celeba'):
-    gen = generator(filename, key)
-    dataset = tf.data.Dataset.from_generator(gen, tf.float32)
-    return dataset
 
-get_h5_images()
-# get_images()
+class ImageUtil():
+    def __init__(self, filename, key):
+        self.filename = filename
+        self.key = key
+
+    def get_h5_images(self):
+        gen = Generator(self.filename, self.key)
+        dataset = tf.data.Dataset.from_generator(gen, tf.float32)
+        return dataset

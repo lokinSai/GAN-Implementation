@@ -2,7 +2,8 @@ import matplotlib.pyplot as plt
 import tensorflow as tf
 import os
 
-class Image_helper():
+
+class ImageHelper():
     def __init__(self, noise_dim, num_examples_to_generate=16, img_dir='images'):
         try:
             os.mkdir(img_dir)
@@ -16,7 +17,7 @@ class Image_helper():
         # This is so all layers run in inference mode (batchnorm).
         predictions = model(self.seed, training=False)
 
-        fig = plt.figure(figsize=(4,4))
+        fig = plt.figure(figsize=(4, 4))
 
         for i in range(predictions.shape[0]):
             plt.subplot(4, 4, i+1)
@@ -24,4 +25,3 @@ class Image_helper():
             plt.axis('off')
 
         plt.savefig('{}/image_at_epoch_{:04d}.png'.format(self.img_dir, epoch))
-        # plt.show()
