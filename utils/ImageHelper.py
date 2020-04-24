@@ -25,3 +25,10 @@ class ImageHelper():
             plt.axis('off')
 
         plt.savefig('{}/image_at_epoch_{:04d}.png'.format(self.img_dir, epoch))
+
+    def generate_images_for_FID(self,model,noise_dim,n_images):
+        seed = tf.random.normal([n_images, noise_dim])
+        predictions = model(seed, training=False)
+        return predictions
+        
+

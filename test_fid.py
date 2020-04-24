@@ -1,8 +1,11 @@
 import numpy as np
 from tensorflow.keras.datasets import cifar10
 
-from utils import FID
+import tensorflow as tf
+# Fix to run on Aditya's server :
+for gpu in tf.config.experimental.list_physical_devices('GPU') : tf.config.experimental.set_memory_growth(gpu, True)
 
+from utils import FID
 
 def main():
     (images1, _), (images2, _) = cifar10.load_data()

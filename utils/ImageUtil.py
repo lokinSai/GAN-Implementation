@@ -6,7 +6,7 @@ import tensorflow as tf
 from glob import glob
 from PIL import Image
 from tqdm import tqdm
-
+import random
 
 def process_image(fname, w=64, h=64):
     img = Image.open(fname)

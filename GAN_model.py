@@ -173,10 +173,22 @@ class GAN():
             avg_gen_loss.append(np.mean(g_loss_vals))
 
             if (epoch + 1) % 500 == 0:
-                checkpoint.save(file_prefix=checkpoint_prefix)
+                # Save weights
+                # checkpoint.save(file_prefix=checkpoint_prefix)
+                # Save sample images from generator
                 image_helper.generate_and_save_images(generator, epoch+1)
+                # Graphs about losses
                 self.graphs = {"avg_disc_real_loss":avg_disc_real_loss, "avg_disc_fake_loss":avg_disc_fake_loss  , "avg_gen_loss": avg_gen_loss}
                 self._epochs_vs_loss()
+
+            if (epoch + 1) % 250 == 0:
+                # Save images for FID calculation
+                print("Saving images for FID..")
+                n_imgs = 1000
+                fid_gen_imgs = image_helper.generate_images_for_FID(generator,self.noise_dim,n_imgs).numpy()
+                np.save("fid_dump/"+str(epoch+1).zfill(5)+".npy", fid_gen_imgs)
+                # fid_data_imgs = fid_samples.get(img_dir="img_align_celeba", n=n_imgs)
+                # fid = FID().calculate_fid(fid_gen_imgs, fid_data_imgs)
 
             print('Time for epoch {} is {} sec'.format(epoch + 1, time.time()-start))
             print("Epoch " + str(epoch + 1) + "- Real Discriminator Loss:", np.mean(avg_disc_real_loss),
@@ -199,5 +211,5 @@ class GAN():
         plt.savefig('epochs_vs_loss.png')
 
 if __name__ == '__main__':
-    G = GAN(buffer_size=6000, batch_size=8, epochs=8000)
+    G = GAN(buffer_size=6000, batch_size=16, epochs=8000)
     G.train()
