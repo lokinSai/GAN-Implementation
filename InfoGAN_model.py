@@ -9,19 +9,20 @@ from tensorflow.keras import layers
 
 from utils import *
 
-
-class GAN():
-    def __init__(self, buffer_size=6000, batch_size=1000, epochs=8000, noise_dim=100, filename='celeba_dataset.h5', key='celeba'):
+class InfoGAN():
+    def __init__(self, buffer_size=6000, batch_size=32, epochs=8000,
+                 noise_dim=100, n_control_cat=4, filename='celeba_dataset.h5', key='celeba'):
         self.buffer_size = buffer_size
         self.batch_size = batch_size
         self.epochs = epochs
         self.noise_dim = noise_dim
+        self.n_control_cat = n_control_cat
         self.train_dataset = ImageUtil(filename=filename, key=key).get_h5_images()
         self.train_dataset = self.train_dataset.shuffle(buffer_size).batch(batch_size)
 
     def _make_generator_model(self):
         model = tf.keras.Sequential()
-        model.add(layers.Dense(16*16*256, use_bias=False, input_shape=(self.noise_dim,)))
+        model.add(layers.Dense(16*16*256, use_bias=False, input_shape=(self.noise_dim+self.n_control_cat,)))
         model.add(layers.BatchNormalization())
         model.add(layers.LeakyReLU())
 
@@ -61,14 +62,20 @@ class GAN():
         return model
 
     def _discriminator_loss(self, cross_entropy, real_output, fake_output):
-        real_loss = tf.reduce_mean(real_output)
-        fake_loss = tf.reduce_mean(fake_output)
-        total_loss = - real_loss + fake_loss
+        real_loss = cross_entropy(tf.ones_like(real_output), real_output)
+        fake_loss = cross_entropy(tf.zeros_like(fake_output), fake_output)
+        total_loss = real_loss + fake_loss
         return total_loss
 
     def _generator_loss(self, cross_entropy, fake_output):
-        fake_loss_gan = - tf.reduce_mean(fake_output)
-        return fake_loss_gan
+        return cross_entropy(tf.ones_like(fake_output), fake_output)
+
+    def _generate_noise_and_control(self):
+        noise = tf.random.normal([self.batch_size, self.noise_dim])
+        rand_cat = np.random.randint(0, self.n_control_cat, size=self.batch_size)
+        control_cat = tf.keras.utils.to_categorical(rand_cat, num_classes=self.n_control_cat)
+        noise = tf.concat([noise, control_cat], axis=1)
+        return noise
 
     @tf.function
     def _train_step(self,
@@ -77,9 +84,8 @@ class GAN():
                     discriminator,
                     generator_optimizer,
                     discriminator_optimizer,
-                    cross_entropy,
-                    batch_size):
-        noise = tf.random.normal([batch_size, self.noise_dim])
+                    cross_entropy):
+        noise = self._generate_noise_and_control()
 
         with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
             generated_images = generator(noise, training=True)
@@ -118,14 +124,13 @@ class GAN():
                                  discriminator,
                                  generator_optimizer,
                                  discriminator_optimizer,
-                                 cross_entropy,
-                                 self.batch_size)
+                                 cross_entropy)
 
-            if (epoch + 1) % 1000 == 0:
+            if (epoch + 1) % 30 == 0:
                 checkpoint.save(file_prefix=checkpoint_prefix)
-                image_helper.generate_and_save_images(generator, epoch+1)
+                image_helper.generate_and_save_images_control_cat(generator, epoch+1, self.n_control_cat)
 
             print('Time for epoch {} is {} sec'.format(epoch + 1, time.time()-start))
 
         # Generate after the final epoch
-        image_helper.generate_and_save_images(generator, self.epochs)
+        image_helper.generate_and_save_images_control_cat(generator, self.epochs, self.n_control_cat)
