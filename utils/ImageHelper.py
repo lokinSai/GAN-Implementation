@@ -40,9 +40,8 @@ class ImageHelper():
         plt.savefig('{}/image_at_epoch_{:04d}.png'.format(self.img_dir, epoch))
 
     def generate_and_save_images_control_cat(self, model, epoch, n_control_cat, n_sample_per_category=4):
-        predictions = model(
-            self._generate_noise_and_control(n_control_cat, n_sample_per_category),
-            training=False)
+        predictions = model.predict(
+            self._generate_noise_and_control(n_control_cat, n_sample_per_category))
         fig = plt.figure(figsize=(n_control_cat, n_sample_per_category))
 
         for i in range(predictions.shape[0]):
