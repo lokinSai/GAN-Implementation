@@ -24,6 +24,7 @@ class InfoGAN():
         self.n_control_cat = n_control_cat
         self.train_dataset = ImageUtil(filename=filename, key=key).get_h5_images()
         self.train_dataset = self.train_dataset.shuffle(buffer_size).batch(batch_size)
+        self.graphs = {}
 
     def _make_generator_model(self):
         # weight initialization
@@ -113,8 +114,19 @@ class InfoGAN():
 
         # inverted labels for fake images
         # train g_model & q_model at the same time
-        _, g_1, g_2 = gan_model.train_on_batch(noise, [np.ones((self.batch_size, 1)), control_cat])
-        return d_loss_true, d_loss_fake, g_1, g_2
+        _, g_loss, q_loss = gan_model.train_on_batch(noise, [np.ones((self.batch_size, 1)), control_cat])
+        return d_loss_true, d_loss_fake, g_loss, q_loss
+
+    def _epochs_vs_loss(self):
+        fig = plt.figure(figsize=(12,8))
+        L = len(self.graphs["avg_gen_loss"])
+        plt.plot(range(L), self.graphs["avg_gen_loss"], "-b", label='generator loss')
+        plt.plot(range(L), self.graphs["avg_disc_real_loss"], "-r", label='real discriminator loss')
+        plt.plot(range(L), self.graphs["avg_disc_fake_loss"], "-y", label='fake discriminator loss')
+        plt.legend(loc="upper left")
+        plt.xlabel("epochs")
+        plt.ylabel("loss")
+        plt.savefig('images/epochs_vs_loss.png')
 
     def train(self):
         g_model = self._make_generator_model()
@@ -122,16 +134,26 @@ class InfoGAN():
         gan_model = self._make_gan_model(g_model, d_model, q_model)
 
         image_helper = ImageHelper(noise_dim=self.noise_dim)
-
+        avg_d_loss_true, avg_d_loss_fake, avg_g_loss = [], [], []
         for epoch in range(self.epochs):
             start = time.time()
+            d_loss_true, d_loss_fake, g_loss = [], [], []
             for image_batch in self.train_dataset:
                 if image_batch.shape[0] < self.batch_size:
                     break
-                self._infoGan_train_step(image_batch, g_model, d_model, gan_model)
+                d_true, d_fake, g, _ = self._infoGan_train_step(image_batch, g_model, d_model, gan_model)
+                d_loss_true.append(d_true)
+                d_loss_fake.append(d_fake)
+                g_loss.append(g)
+            avg_d_loss_true.append(np.mean(d_loss_true))
+            avg_d_loss_fake.append(np.mean(d_loss_fake))
+            avg_g_loss.append(np.mean(g_loss))
 
             if (epoch + 1) % 30 == 0:
                 # checkpoint.save(file_prefix=checkpoint_prefix)
+                self.graphs = {'avg_gen_loss': avg_g_loss,
+                    'avg_disc_real_loss': avg_d_loss_true, 'avg_disc_fake_loss': avg_d_loss_fake}
+                self._epochs_vs_loss()
                 image_helper.generate_and_save_images_control_cat(g_model, epoch+1, self.n_control_cat)
 
             print('Time for epoch {} is {} sec'.format(epoch + 1, time.time()-start))
