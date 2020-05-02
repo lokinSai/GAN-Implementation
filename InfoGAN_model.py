@@ -25,6 +25,7 @@ class InfoGAN():
         self.train_dataset = ImageUtil(filename=filename, key=key).get_h5_images()
         self.train_dataset = self.train_dataset.shuffle(buffer_size).batch(batch_size)
         self.graphs = {}
+        self.fid_graphs = [] # tuple (epoch, fid_score)
 
     def _make_generator_model(self):
         # weight initialization
@@ -97,15 +98,15 @@ class InfoGAN():
         model.compile(loss=['binary_crossentropy', 'categorical_crossentropy'], optimizer=opt)
         return model
 
-    def _generate_noise_and_control(self):
-        noise = tf.random.normal([self.batch_size, self.noise_dim])
-        rand_cat = np.random.randint(0, self.n_control_cat, size=self.batch_size)
+    def _generate_noise_and_control(self, size):
+        noise = tf.random.normal([size, self.noise_dim])
+        rand_cat = np.random.randint(0, self.n_control_cat, size=size)
         control_cat = tf.keras.utils.to_categorical(rand_cat, num_classes=self.n_control_cat)
         noise = tf.concat([noise, control_cat], axis=1)
         return noise, control_cat
 
     def _infoGan_train_step(self, images, g_model, d_model, gan_model):
-        noise, control_cat = self._generate_noise_and_control()
+        noise, control_cat = self._generate_noise_and_control(self.batch_size)
 
         d_loss_true = d_model.train_on_batch(images, np.ones((self.batch_size, 1)))
 
@@ -128,7 +129,24 @@ class InfoGAN():
         plt.ylabel("loss")
         plt.savefig('images/epochs_vs_loss.png')
 
+    def _plot_fid(self):
+        fig = plt.figure()
+        plt.plot([epoch for epoch, _ in self.fid_graphs], [score for _, score in self.fid_graphs] ,label='FID')
+        plt.xlabel("epochs")
+        plt.ylabel("FID")
+        plt.title("Frechet Inception distance")
+        plt.savefig('images/FID_graph.png')
+
+    def _fid(self, fid, g_model, epoch, size=100):
+        noise, control_cat = self._generate_noise_and_control(size=size)
+        generated_images = g_model.predict(noise)
+        true_images = np.array(list(self.train_dataset.unbatch().take(size).as_numpy_iterator()))
+        fid_score = fid.calculate_fid(generated_images, true_images)
+        self.fid_graphs.append((epoch, fid_score))
+        self._plot_fid()
+
     def train(self):
+        fid = FID()
         g_model = self._make_generator_model()
         d_model, q_model = self._make_discriminator_model()
         gan_model = self._make_gan_model(g_model, d_model, q_model)
@@ -150,7 +168,8 @@ class InfoGAN():
             avg_g_loss.append(np.mean(g_loss))
 
             if (epoch + 1) % 30 == 0:
-                # checkpoint.save(file_prefix=checkpoint_prefix)
+                # calculate FID
+                self._fid(fid, g_model, epoch+1)
                 self.graphs = {'avg_gen_loss': avg_g_loss,
                     'avg_disc_real_loss': avg_d_loss_true, 'avg_disc_fake_loss': avg_d_loss_fake}
                 self._epochs_vs_loss()
