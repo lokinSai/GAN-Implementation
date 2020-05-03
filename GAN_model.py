@@ -172,7 +172,7 @@ class GAN():
             avg_disc_fake_loss.append(np.mean(d_fake_loss_vals))
             avg_gen_loss.append(np.mean(g_loss_vals))
 
-            if (epoch + 1) % 500 == 0:
+            if (epoch + 1) % 25 == 0:
                 # Save weights
                 # checkpoint.save(file_prefix=checkpoint_prefix)
                 # Save sample images from generator
@@ -181,7 +181,7 @@ class GAN():
                 self.graphs = {"avg_disc_real_loss":avg_disc_real_loss, "avg_disc_fake_loss":avg_disc_fake_loss  , "avg_gen_loss": avg_gen_loss}
                 self._epochs_vs_loss()
 
-            if (epoch + 1) % 250 == 0:
+            if (epoch + 1) % 50 == 0:
                 # Save images for FID calculation
                 print("Saving images for FID..")
                 n_imgs = 1000
@@ -211,5 +211,5 @@ class GAN():
         plt.savefig('epochs_vs_loss.png')
 
 if __name__ == '__main__':
-    G = GAN(buffer_size=6000, batch_size=16, epochs=8000)
+    G = GAN(buffer_size=6000, batch_size=16, epochs=500)
     G.train()

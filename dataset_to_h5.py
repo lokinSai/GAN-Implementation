@@ -19,7 +19,7 @@ def main(mini_test=False):
     filenames = glob(os.path.join(img_dir, '*.jpg'))
     size = len(filenames)
     if mini_test:
-        size = 100
+        size = 20000
 
     w, h, dim = 64, 64, 3
 

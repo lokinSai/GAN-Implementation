@@ -22,7 +22,10 @@ def get(img_dir="./img_align_celeba", n=100):
     data = np.zeros((len(new_files), w, h, 3), dtype=np.float)
     for i, fname in tqdm(enumerate(new_files)):
         img_arr = process_image(fname)
-        data[i] = img_arr
+        if img_arr.shape[2] == 3:
+            data[i] = img_arr
+        else :
+            data[i] = img_arr[:,:,:3]
     return data
 
 def process_image(fname, w=64, h=64):
@@ -32,28 +35,30 @@ def process_image(fname, w=64, h=64):
     img_arr = (img_arr - 127.5) / 127.5
     return img_arr
 
-
 if __name__ == '__main__':
-    fid_array = []
-    x = []
-    samples = glob(os.path.join("fid_dump", '*.npy')) ; samples.sort()
-    inception = FID()
-    for name in samples:
-        x_label = name.split("/")[1][:-4]
-        x.append(int(x_label))
-        fid_gen_imgs = np.load(name)
-        fid_data_imgs = get(img_dir="img_align_celeba", n=100)
-        fid = inception.calculate_fid(fid_gen_imgs, fid_data_imgs)
-        print("FID for epoch ", x_label, " was ", fid)
-        fid_array.append(fid)
-
-    indices = np.argsort(x)
-    # Plot
     fig = plt.figure()
-    plt.plot(np.array(x)[indices], np.array(fid_array)[indices] ,label='FID')
-    plt.xlabel("epochs")
-    plt.ylabel("FID")
-    plt.title("Frechet Inception distance")
+    for j in range(10):
+        fid_array = []
+        x = []
+        samples = glob(os.path.join("fid_dump", '*.npy')) ; samples.sort()
+        inception = FID()
+        for name in samples:
+            x_label = name.split("/")[1][:-4]
+            x.append(int(x_label))
+            fid_gen_imgs = np.load(name)
+            fid_data_imgs = get( n=1000)
+            fid = inception.calculate_fid(fid_gen_imgs, fid_data_imgs)
+            print("FID for epoch ", x_label, " was ", fid)
+            fid_array.append(fid)
+
+        indices = np.argsort(x)
+        # Plot
+        plt.plot(np.array(x)[indices], np.array(fid_array)[indices] ,label='FID')
+        plt.xlabel("epochs")
+        plt.ylabel("FID")
+        plt.title("Frechet Inception distance") ;
+
+    plt.grid()
     plt.savefig('FID_graph.png')
 
 
