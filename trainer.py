@@ -1,10 +1,8 @@
-from GAN_model import GAN
-
+from InfoGAN_model import InfoGAN
 
 def run():
-    gan = GAN(epochs=10)
+    gan = InfoGAN(batch_size=16, epochs=1000, n_control_cat=8, filename='cartoon_dataset.h5', key='cartoon')
     gan.train()
-
 
 if __name__ == '__main__':
     run()

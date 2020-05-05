@@ -11,12 +11,12 @@ from utils import *
 
 
 class GAN():
-    def __init__(self, buffer_size=6000, batch_size=1000, epochs=8000, noise_dim=100, filename='celeba_dataset.h5'):
+    def __init__(self, buffer_size=6000, batch_size=1000, epochs=8000, noise_dim=100, filename='celeba_dataset.h5', key='celeba'):
         self.buffer_size = buffer_size
         self.batch_size = batch_size
         self.epochs = epochs
         self.noise_dim = noise_dim
-        self.train_dataset = ImageUtil(filename=filename, key='celeba').get_h5_images()
+        self.train_dataset = ImageUtil(filename=filename, key=key).get_h5_images()
         self.train_dataset = self.train_dataset.shuffle(buffer_size).batch(batch_size)
 
     def _make_generator_model(self):
