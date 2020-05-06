@@ -14,11 +14,7 @@
 2. Run `python3 GAN_model.py`. This will generate samples for calculating FID in `fid_dump` folder, and save generated images at regular epochs in the `images` folder. You will also get the `epochs_vs_loss.jpg` graph.
 3. Run `python3 fid_samples.py`. This will calculate Frechet Inception Distance from the samples saved in previous step and by picking random images from `img_align_celeba` folder. In the end this will generate a `FID_vs_epochs.jpg` file where it calculates the FID multiple times.
 
-The `DCGAN.ipynb` downloads the h5 file from Google Drive and trains the generator. It does not calculate FID dur to the large size of dataset involved, but is just intended to show how the training works. Moreover it takes a long time to run on Collab and the results start making sense only after around 3000 epochs. Steps 1-3 should be followed to get all the results.
-
-## Process:
-
-For every 5 epoch, model will randomly generate few images under /images folder
+**NOTE : **The `DCGAN.ipynb` downloads the h5 file from Google Drive and trains the generator. It does not calculate FID dur to the large size of dataset involved, but is just intended to show how the training works. Moreover it takes a long time to run on Collab and the results start making sense only after around 3000 epochs. Steps 1-3 should be followed to get all the results.
 
 ## Notes:
 
