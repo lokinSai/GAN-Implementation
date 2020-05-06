@@ -22,10 +22,6 @@ Visit [InfoGAN.ipynb](https://github.com/lokinSai/GAN-Implementation/blob/master
 ## Steps to run Progressive GAN
 Visit [Progressive-GAN.ipynb](https://github.com/lokinSai/GAN-Implementation/blob/master/Progressive-GAN.ipynb).
 
-## Process:
-
-For every 5 epoch, model will randomly generate few images under /images folder
-
 ## Notes:
 
 ### Frechet Inception Distance (FID):
