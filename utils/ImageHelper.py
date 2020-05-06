@@ -30,5 +30,15 @@ class ImageHelper():
         seed = tf.random.normal([n_images, noise_dim])
         predictions = model(seed, training=False)
         return predictions
-        
 
+    def generate_and_save_images_control_cat(self, model, epoch, n_control_cat, n_sample_per_category=4):
+        predictions = model.predict(
+            self._generate_noise_and_control(n_control_cat, n_sample_per_category))
+        fig = plt.figure(figsize=(n_control_cat, n_sample_per_category))
+
+        for i in range(predictions.shape[0]):
+            plt.subplot(n_control_cat, n_sample_per_category, i+1)
+            plt.imshow((predictions[i, :, :, :] + 1) / 2.0)
+            plt.axis('off')
+
+        plt.savefig('{}/image_at_epoch_{:04d}.png'.format(self.img_dir, epoch))
