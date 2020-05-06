@@ -7,6 +7,7 @@
 3. Unzip downloaded file and make sure you created a repository name "img_align_celeba" with training images inside
 4. `> python3 dataset_to_h5.py`: to create h5 dataset file # Set mini_test flag to False for creating the whole dataset
 5. `> python3 trainer.py`: to train basic GAN Model.
+6. `> python3 fid_samples.py` to Calculate FID on the saved images.
 
 ## Process:
 

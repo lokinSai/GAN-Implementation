@@ -1,3 +1,6 @@
+# To run on Aditya's server
+import matplotlib; matplotlib.use('Agg')
+
 import os
 import time
 import functools
@@ -9,6 +12,9 @@ from tensorflow.keras import layers
 
 from utils import *
 
+# Fix to run on Aditya's server :
+for gpu in tf.config.experimental.list_physical_devices('GPU') : tf.config.experimental.set_memory_growth(gpu, True)
+
 
 class GAN():
     def __init__(self, buffer_size=6000, batch_size=1000, epochs=8000, noise_dim=100, filename='celeba_dataset.h5', key='celeba'):
@@ -18,57 +24,94 @@ class GAN():
         self.noise_dim = noise_dim
         self.train_dataset = ImageUtil(filename=filename, key=key).get_h5_images()
         self.train_dataset = self.train_dataset.shuffle(buffer_size).batch(batch_size)
+        self.graphs = {}
 
     def _make_generator_model(self):
         model = tf.keras.Sequential()
-        model.add(layers.Dense(16*16*256, use_bias=False, input_shape=(self.noise_dim,)))
+        model.add(layers.Dense(4 * 4 * 1024, use_bias=False, input_shape=(self.noise_dim,)))
         model.add(layers.BatchNormalization())
         model.add(layers.LeakyReLU())
+        # model.add(layers.ReLU())
 
-        model.add(layers.Reshape((16, 16, 256)))
-        assert model.output_shape == (None, 16, 16, 256)  # Note: None is the batch size
+        model.add(layers.Reshape((4, 4, 1024)))
+        assert model.output_shape == (None, 4, 4, 1024)  # Note: None is the batch size
 
-        model.add(layers.Conv2DTranspose(128, (5, 5), strides=(1, 1), padding='same', use_bias=False))
+        model.add(layers.Conv2DTranspose(512, (5, 5), strides=(1, 1), padding='same', use_bias=False))
+        assert model.output_shape == (None, 4, 4, 512)
+        model.add(layers.BatchNormalization())
+        model.add(layers.LeakyReLU())
+        # model.add(layers.ReLU())
+
+        model.add(layers.Conv2DTranspose(256, (5, 5), strides=(2, 2), padding='same', use_bias=False))
+        assert model.output_shape == (None, 8, 8, 256)
+        model.add(layers.BatchNormalization())
+        model.add(layers.LeakyReLU())
+        # model.add(layers.ReLU())
+
+        model.add(layers.Conv2DTranspose(128, (5, 5), strides=(2, 2), padding='same', use_bias=False))
         assert model.output_shape == (None, 16, 16, 128)
         model.add(layers.BatchNormalization())
         model.add(layers.LeakyReLU())
+        # model.add(layers.ReLU())
 
         model.add(layers.Conv2DTranspose(64, (5, 5), strides=(2, 2), padding='same', use_bias=False))
         assert model.output_shape == (None, 32, 32, 64)
         model.add(layers.BatchNormalization())
         model.add(layers.LeakyReLU())
+        # model.add(layers.ReLU())
 
         model.add(layers.Conv2DTranspose(3, (5, 5), strides=(2, 2), padding='same', use_bias=False, activation='tanh'))
         assert model.output_shape == (None, 64, 64, 3)
 
         return model
 
+
     def _make_discriminator_model(self):
         model = tf.keras.Sequential()
-        model.add(layers.Conv2D(64, (5, 5), strides=(2, 2), padding='same', input_shape=[64, 64, 3]))
+        model.add(layers.Conv2D(64, (5, 5), strides=(2, 2), padding='same',input_shape=[64, 64, 3]))
         assert model.output_shape == (None, 32, 32, 64)
         model.add(layers.LeakyReLU())
-        model.add(layers.Dropout(0.3))
 
+        model.add(layers.Dropout(0.3))
         model.add(layers.Conv2D(128, (5, 5), strides=(2, 2), padding='same'))
         assert model.output_shape == (None, 16, 16, 128)
         model.add(layers.LeakyReLU())
-        model.add(layers.Dropout(0.3))
 
+        model.add(layers.Dropout(0.3))
+        model.add(layers.Conv2D(256, (5, 5), strides=(2, 2), padding='same'))
+        assert model.output_shape == (None, 8, 8, 256)
+        model.add(layers.LeakyReLU())
+
+        model.add(layers.Dropout(0.3))
+        model.add(layers.Conv2D(512, (5, 5), strides=(2, 2), padding='same'))
+        assert model.output_shape == (None, 4, 4, 512)
+        model.add(layers.LeakyReLU())
+
+        model.add(layers.Dropout(0.3))
+        model.add(layers.Conv2D(1024, (5, 5), strides=(2, 2), padding='same'))
+        assert model.output_shape == (None, 2, 2, 1024)
+        model.add(layers.LeakyReLU())
+
+        model.add(layers.Dropout(0.3))
         model.add(layers.Flatten())
         model.add(layers.Dense(1))
 
         return model
 
+
     def _discriminator_loss(self, cross_entropy, real_output, fake_output):
-        real_loss = tf.reduce_mean(real_output)
-        fake_loss = tf.reduce_mean(fake_output)
-        total_loss = - real_loss + fake_loss
-        return total_loss
+        #real_loss = tf.reduce_mean(real_output)
+        #fake_loss = tf.reduce_mean(fake_output)
+        #total_loss = - real_loss + fake_loss
+        real_loss = cross_entropy(tf.ones_like(real_output), real_output)
+        fake_loss = cross_entropy(tf.zeros_like(fake_output), fake_output)
+        total_loss = real_loss + fake_loss
+        return total_loss, real_loss, fake_loss
 
     def _generator_loss(self, cross_entropy, fake_output):
-        fake_loss_gan = - tf.reduce_mean(fake_output)
-        return fake_loss_gan
+        #fake_loss_gan = - tf.reduce_mean(fake_output)
+        fake_loss = cross_entropy(tf.ones_like(fake_output), fake_output)
+        return fake_loss
 
     @tf.function
     def _train_step(self,
@@ -87,13 +130,15 @@ class GAN():
             real_output = discriminator(images, training=True)
             fake_output = discriminator(generated_images, training=True)
             gen_loss = self._generator_loss(cross_entropy, fake_output)
-            disc_loss = self._discriminator_loss(cross_entropy, real_output, fake_output)
+            disc_loss, disc_real_loss, disc_fake_loss = self._discriminator_loss(cross_entropy, real_output, fake_output)
 
         gradients_of_generator = gen_tape.gradient(gen_loss, generator.trainable_variables)
         gradients_of_discriminator = disc_tape.gradient(disc_loss, discriminator.trainable_variables)
 
         generator_optimizer.apply_gradients(zip(gradients_of_generator, generator.trainable_variables))
         discriminator_optimizer.apply_gradients(zip(gradients_of_discriminator, discriminator.trainable_variables))
+
+        return disc_real_loss, disc_fake_loss, gen_loss
 
     def train(self, checkpoint_dir='./training_checkpoints'):
         generator = self._make_generator_model()
@@ -110,22 +155,61 @@ class GAN():
         checkpoint_prefix = os.path.join(checkpoint_dir, "ckpt")
         image_helper = ImageHelper(noise_dim=self.noise_dim)
 
+        avg_disc_real_loss, avg_disc_fake_loss, avg_gen_loss = [], [], []
+
         for epoch in range(self.epochs):
             start = time.time()
             for image_batch in self.train_dataset:
-                self._train_step(image_batch,
-                                 generator,
-                                 discriminator,
-                                 generator_optimizer,
-                                 discriminator_optimizer,
-                                 cross_entropy,
-                                 self.batch_size)
+                d_real_loss_vals, d_fake_loss_vals, g_loss_vals = [], [], []
 
-            if (epoch + 1) % 1000 == 0:
-                checkpoint.save(file_prefix=checkpoint_prefix)
+                disc_real_loss, disc_fake_loss, g_loss = self._train_step(image_batch,generator,discriminator,generator_optimizer,discriminator_optimizer,cross_entropy,self.batch_size)
+
+                d_real_loss_vals.append(float(disc_real_loss))
+                d_fake_loss_vals.append(float(disc_fake_loss))
+                g_loss_vals.append(float(g_loss))
+
+            avg_disc_real_loss.append(np.mean(d_real_loss_vals))
+            avg_disc_fake_loss.append(np.mean(d_fake_loss_vals))
+            avg_gen_loss.append(np.mean(g_loss_vals))
+
+            if (epoch + 1) % 500 == 0:
+                # Save weights
+                # checkpoint.save(file_prefix=checkpoint_prefix)
+                # Save sample images from generator
                 image_helper.generate_and_save_images(generator, epoch+1)
+                # Graphs about losses
+                self.graphs = {"avg_disc_real_loss":avg_disc_real_loss, "avg_disc_fake_loss":avg_disc_fake_loss  , "avg_gen_loss": avg_gen_loss}
+                self._epochs_vs_loss()
+
+            if (epoch + 1) % 250 == 0:
+                # Save images for FID calculation
+                print("Saving images for FID..")
+                n_imgs = 1000
+                fid_gen_imgs = image_helper.generate_images_for_FID(generator,self.noise_dim,n_imgs).numpy()
+                np.save("fid_dump/"+str(epoch+1).zfill(5)+".npy", fid_gen_imgs)
+                # fid_data_imgs = fid_samples.get(img_dir="img_align_celeba", n=n_imgs)
+                # fid = FID().calculate_fid(fid_gen_imgs, fid_data_imgs)
 
             print('Time for epoch {} is {} sec'.format(epoch + 1, time.time()-start))
+            print("Epoch " + str(epoch + 1) + "- Real Discriminator Loss:", np.mean(avg_disc_real_loss),
+              "Fake Discriminator Loss:", np.mean(avg_disc_fake_loss),
+              "Generator Loss:", np.mean(avg_gen_loss))
+            print("\n")
 
         # Generate after the final epoch
         image_helper.generate_and_save_images(generator, self.epochs)
+
+    def _epochs_vs_loss(self):
+        fig = plt.figure(figsize=(12,8))
+        L = len(self.graphs["avg_gen_loss"])
+        plt.plot(range(L), self.graphs["avg_gen_loss"], "-b", label='generator loss')
+        plt.plot(range(L), self.graphs["avg_disc_real_loss"], "-r", label='real discriminator loss')
+        plt.plot(range(L), self.graphs["avg_disc_fake_loss"], "-y", label='fake discriminator loss')
+        plt.legend(loc="upper left")
+        plt.xlabel("epochs")
+        plt.ylabel("loss")
+        plt.savefig('epochs_vs_loss.png')
+
+if __name__ == '__main__':
+    G = GAN(buffer_size=6000, batch_size=16, epochs=5000)
+    G.train()

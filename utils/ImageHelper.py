@@ -38,6 +38,7 @@ class ImageHelper():
             plt.axis('off')
 
         plt.savefig('{}/image_at_epoch_{:04d}.png'.format(self.img_dir, epoch))
+        
 
     def generate_and_save_images_control_cat(self, model, epoch, n_control_cat, n_sample_per_category=4):
         predictions = model.predict(
