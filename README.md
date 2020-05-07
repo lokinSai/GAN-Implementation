@@ -30,3 +30,10 @@ To test the FID package on the CIFAR10 dataset:
 `> python3 test_fid.py`
 
 The default input shape is (299, 299, 3) but can be easily changed by passing in a tuple to the FID class.
+
+## Resources Used to implement our model:
+1. [Tensorflow DCGAN Tutorial](https://www.tensorflow.org/tutorials/generative/dcgan)
+2. [Machine Learning Mastery: Info GAN](https://machinelearningmastery.com/how-to-develop-an-information-maximizing-generative-adversarial-network-infogan-in-keras/)
+3. [Machine Learning Mastery: Progressive GAN](https://machinelearningmastery.com/how-to-implement-progressive-growing-gan-models-in-keras/)
+4. [Machine Learning Mastery: FID](https://machinelearningmastery.com/how-to-implement-the-frechet-inception-distance-fid-from-scratch/)
+
